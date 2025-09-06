@@ -1,24 +1,34 @@
-mod _macros;
+#![no_main]
+#![no_std]
+
+#[macro_use]
+mod keymap;
+#[macro_use]
+mod macros;
 mod vial;
 
 use defmt::info;
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
 use embassy_rp::flash::{Async, Flash};
-use embassy_rp::gpio::{Input, Output};
+use embassy_rp::gpio::{Flex};
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
-use keymap::{COL, ROW};
+// use keymap::{COL, ROW};
 use rmk::channel::EVENT_CHANNEL;
 use rmk::config::{BehaviorConfig, KeyboardUsbConfig, RmkConfig, StorageConfig, VialConfig};
 use rmk::debounce::default_debouncer::DefaultDebouncer;
 use rmk::futures::future::join3;
 use rmk::input_device::Runnable;
 use rmk::keyboard::Keyboard;
-use rmk::matrix::Matrix;
+use rmk::bidirectional_matrix::BidirectionalMatrix;
 use rmk::{initialize_keymap_and_storage, run_devices, run_rmk};
 use vial::{VIAL_KEYBOARD_DEF, VIAL_KEYBOARD_ID};
 use {defmt_rtt as _, panic_probe as _};
+
+const OUTPUT_PIN_NUM: usize = 6;
+const INPUT_PIN_NUM: usize = 8;
+const COLS: usize = 12;
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
@@ -36,8 +46,10 @@ async fn main(_spawner: Spawner) {
     let driver = Driver::new(p.USB, Irqs);
 
     // Pin config
-    let (input_pins, output_pins) =
-        config_matrix_pins_rp!(peripherals: p, input: [PIN_6, PIN_7, PIN_8, PIN_9], output: [PIN_19, PIN_20, PIN_21]);
+    let (input_pins, output_pins) = config_matrix_pins_rp!(peripherals: p,
+        input: [PIN_26, PIN_15, PIN_14, PIN_13, PIN_9, PIN_10, PIN_11, PIN_12],
+        output: [PIN_29, PIN_28, PIN_27, PIN_6, PIN_7, PIN_8]
+    );
 
     // Use internal flash to emulate eeprom
     // Both blocking and async flash are support, use different API
@@ -47,8 +59,8 @@ async fn main(_spawner: Spawner) {
     let keyboard_usb_config = KeyboardUsbConfig {
         vid: 0x4c4b,
         pid: 0x4643,
-        manufacturer: "Haobo",
-        product_name: "RMK Keyboard",
+        manufacturer: "archnode",
+        product_name: "Weaver",
         serial_number: "vial:f64c2b3c:000001",
     };
 
@@ -68,8 +80,8 @@ async fn main(_spawner: Spawner) {
         initialize_keymap_and_storage(&mut default_keymap, flash, &storage_config, &mut behavior_config).await;
 
     // Initialize the matrix + keyboard
-    let debouncer = DefaultDebouncer::<ROW, COL>::new();
-    let mut matrix = Matrix::<_, _, _, ROW, COL>::new(input_pins, output_pins, debouncer);
+    let debouncer = DefaultDebouncer::<INPUT_PIN_NUM, OUTPUT_PIN_NUM>::new();
+    let mut matrix = BidirectionalMatrix::<_, _, _, INPUT_PIN_NUM, OUTPUT_PIN_NUM, COLS>::new(input_pins, output_pins, debouncer);
     let mut keyboard = Keyboard::new(&keymap);
 
     // Start
