@@ -1,5 +1,5 @@
 
-use rmk::{a, action::KeyAction, k, keycode::ModifierCombination, layer, mo, wm, mt};
+use rmk::{a, action::{EncoderAction, KeyAction}, encoder, k, keycode::ModifierCombination, layer, mo, mt, wm};
 pub(crate) const COL: usize = 12;
 pub(crate) const ROW: usize = 4;
 pub(crate) const NUM_LAYER: usize = 4;
@@ -14,13 +14,13 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
                 k!(B), k!(N), mt!(R, ModifierCombination::new_from(false, false, false, false, true)), mt!(S, ModifierCombination::new_from(false, false, true, false, false)), k!(G), k!(Q)],
             [k!(Backspace), k!(F), k!(V), k!(LeftBracket), k!(Quote), mt!(Semicolon, ModifierCombination::new_from(false, true, false, false, false)),
                 mt!(Z, ModifierCombination::new_from(true, true, false, false, false)), k!(Y), k!(Comma), k!(Dot), k!(K), k!(Enter)],
-            [a!(No), a!(No), k!(LShift), k!(Space), a!(No), a!(No),
+            [a!(No), k!(No), k!(LShift), k!(Space), a!(No), a!(No),
                 a!(No), a!(No), mo!(2), mo!(1), a!(No), mo!(3)]
         ]),
         layer!([
             [k!(NonusHash), k!(Grave), wm!(Slash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc8, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc9, ModifierCombination::new_from(true, false, true, false, false)), k!(Equal),
-                wm!(Kc1, ModifierCombination::new_from(false, false, false, true, false)), k!(NonusBackslash), wm!(NonusBackslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(NonusBackslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc9, ModifierCombination::new_from(false, false, false, true, false)), wm!(Grave, ModifierCombination::new_from(false, false, false, true, false))],
-            [wm!(E, ModifierCombination::new_from(true, false, true, false, false)), wm!(Minus, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc7, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc7, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc0, ModifierCombination::new_from(true, false, true, false, false)), k!(RightBracket),
+                wm!(Kc1, ModifierCombination::new_from(false, false, false, true, false)), k!(NonusBackslash), wm!(NonusBackslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc0, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc6, ModifierCombination::new_from(false, false, false, true, false)), wm!(Grave, ModifierCombination::new_from(false, false, false, true, false))],
+            [wm!(E, ModifierCombination::new_from(true, false, true, false, false)), wm!(Minus, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc7, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc7, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc0, ModifierCombination::new_from(true, false, true, false, false)), wm!(RightBracket, ModifierCombination::new_from(false, false, false, true, false)),
                 wm!(Minus, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc8, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc9, ModifierCombination::new_from(false, false, false, true, false)), k!(Slash), wm!(Dot, ModifierCombination::new_from(false, false, false, true, false)), wm!(Q, ModifierCombination::new_from(true, false, true, false, false))],
             [a!(No), k!(NonusHash), wm!(Kc4, ModifierCombination::new_from(false, false, false, true, false)), wm!(NonusBackslash, ModifierCombination::new_from(true, false, true, false, false)), wm!(RightBracket, ModifierCombination::new_from(true, false, true, false, false)), wm!(Equal, ModifierCombination::new_from(false, false, false, true, false)),
                 k!(RightBracket), wm!(Kc5, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc2, ModifierCombination::new_from(false, false, false, true, false)), wm!(Backslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Comma, ModifierCombination::new_from(false, false, false, true, false)), a!(No)],
@@ -47,5 +47,22 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
             [a!(No), a!(No), a!(No), a!(No), a!(No), a!(No),
                 a!(No), a!(No), a!(No), a!(No), a!(No), a!(No)]
         ])
+    ]
+}
+
+pub const fn get_default_encoder_map() -> [[EncoderAction; 1]; NUM_LAYER] {
+    [
+        [
+            encoder!(k!(Up), k!(Down)),
+        ],
+        [
+            encoder!(k!(PageUp), k!(PageDown)),
+        ],
+        [
+            encoder!(k!(KbVolumeUp), k!(KbVolumeDown)),
+        ],
+        [
+            encoder!(k!(KbVolumeUp), k!(KbVolumeDown)),
+        ],
     ]
 }
