@@ -35,7 +35,6 @@ bind_interrupts!(struct Irqs {
 });
 
 const FLASH_SIZE: usize = 2 * 1024 * 1024;
-
 const PIN_NUM: usize = 14;
 
 #[embassy_executor::main]
@@ -117,8 +116,8 @@ async fn main(_spawner: Spawner) {
     let mut keyboard = Keyboard::new(&keymap);
     
     // Initialize Rotary Encoder
-    let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::None);
-    let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::None);
+    let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::Up);
+    let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::Up);
     let mut encoder = RotaryEncoder::with_phase(pin_a, pin_b, DefaultPhase, 0);
 
     // Start
