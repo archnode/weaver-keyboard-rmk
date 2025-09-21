@@ -22,7 +22,7 @@ use rmk::channel::EVENT_CHANNEL;
 use rmk::config::{BehaviorConfig, KeyboardUsbConfig, RmkConfig, StorageConfig, TapHoldConfig, VialConfig};
 use rmk::debounce::default_debouncer::DefaultDebouncer;
 use rmk::futures::future::join3;
-use rmk::input_device::rotary_encoder::{DefaultPhase, RotaryEncoder};
+use rmk::input_device::rotary_encoder::{RotaryEncoder};
 use rmk::input_device::Runnable;
 use rmk::keyboard::Keyboard;
 use rmk::{initialize_encoder_keymap_and_storage, run_devices, run_rmk};
@@ -118,7 +118,7 @@ async fn main(_spawner: Spawner) {
     // Initialize Rotary Encoder
     let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::Up);
     let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::Up);
-    let mut encoder = RotaryEncoder::with_phase(pin_a, pin_b, DefaultPhase, 0);
+    let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 1, false, 0);
 
     // Start
     join3(

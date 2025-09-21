@@ -13,9 +13,9 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
             [k!(Tab), k!(C), mt!(T, ModifierCombination::new_from(false, false, true, false, false)), mt!(I, ModifierCombination::new_from(false, false, false, false, true)), k!(E), k!(O),
                 k!(B), k!(N), mt!(R, ModifierCombination::new_from(false, false, false, false, true)), mt!(S, ModifierCombination::new_from(false, false, true, false, false)), k!(G), k!(Q)],
             [k!(Backspace), k!(F), k!(V), k!(LeftBracket), k!(Quote), mt!(Semicolon, ModifierCombination::new_from(false, true, false, false, false)),
-                mt!(Z, ModifierCombination::new_from(true, true, false, false, false)), k!(Y), k!(Comma), k!(Dot), k!(K), k!(Enter)],
-            [a!(No), k!(No), k!(LShift), k!(Space), a!(No), a!(No),
-                a!(No), a!(No), mo!(2), mo!(1), a!(No), mo!(3)]
+                mt!(Z, ModifierCombination::new_from(true, true, false, false, false)), k!(Y), k!(Comma), k!(Dot), k!(K), a!(No)],
+            [k!(International4), k!(International5), k!(LShift), k!(Space), a!(No), a!(No),
+                a!(No), a!(No), k!(Enter), mo!(2), mo!(1), mo!(3)]
         ]),
         layer!([
             [k!(NonusHash), k!(Grave), wm!(Slash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc8, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc9, ModifierCombination::new_from(true, false, true, false, false)), k!(Equal),
@@ -34,7 +34,7 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
                 k!(No), k!(Kc4), k!(Kc5), k!(Kc6), k!(KpComma), k!(No)],
             [k!(No), k!(No), k!(No), k!(No), k!(No), KeyAction::Transparent,
                 k!(Kc0), k!(Kc1), k!(Kc2), k!(Kc3), k!(KpEqual), k!(No)],
-            [KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, k!(Home), k!(No), k!(No),
+            [KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, k!(No), k!(No),
                 k!(No), k!(No), KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent]
         ]),
         layer!([
