@@ -69,7 +69,7 @@ async fn main(_spawner: Spawner) {
         // Row 3: Right
         ScanLocation::Pins(7,2), ScanLocation::Pins(2,7), ScanLocation::Pins(8,2), ScanLocation::Pins(2,8), ScanLocation::Pins(9,2), ScanLocation::Pins(2,9)],
         // Row 4: Left
-        [ScanLocation::Pins(3,4), ScanLocation::Pins(4,3), ScanLocation::Pins(3,5), ScanLocation::Pins(5,3), ScanLocation::Ignore, ScanLocation::Ignore,
+        [ScanLocation::Pins(3,4), ScanLocation::Pins(4,3), ScanLocation::Pins(3,5), ScanLocation::Pins(5,3), ScanLocation::Pins(3,6), ScanLocation::Ignore,
         // Row 4: Right
         ScanLocation::Ignore, ScanLocation::Ignore, ScanLocation::Pins(8,3), ScanLocation::Pins(3,8), ScanLocation::Pins(9,3), ScanLocation::Pins(3,9)],
     ];
@@ -111,7 +111,7 @@ async fn main(_spawner: Spawner) {
         initialize_encoder_keymap_and_storage(&mut default_keymap, &mut encoder_map, flash, &storage_config, &mut behavior_config).await;
 
     // Initialize the matrix + keyboard
-    let debouncer = DefaultDebouncer::<PIN_NUM, PIN_NUM>::new();
+    let debouncer = DefaultDebouncer::<COL, COL>::new();
     let mut matrix = BidirectionalMatrix::<_, _, PIN_NUM, ROW, COL>::new(flex_pins, debouncer, scan_map);
     let mut keyboard = Keyboard::new(&keymap);
     
