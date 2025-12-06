@@ -10,14 +10,14 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rmk = { version = "0.7.8", default-features = false, features = ["storage", "rp2040_bl", "bidirectional", "usb_log"] }
-embassy-time = { version = "0.4" }
-embassy-rp = { version = "0.7", features = [
+rmk = { version = "0.8", default-features = false, features = ["storage", "rp2040", "usb_log", "vial"] }
+embassy-time = { version = "0.5" }
+embassy-rp = { version = "0.8", features = [
     "rp2040",
     "time-driver",
     "critical-section-impl",
 ] }
-embassy-executor = { version = "0.8", features = [
+embassy-executor = { version = "0.9", features = [
     "arch-cortex-m",
     "executor-thread",
 ] }
@@ -26,14 +26,6 @@ portable-atomic = { version = "1.11", features = ["critical-section"] }
 panic-probe = { version = "1.0" }
 embedded-hal = { version = "1.0.0" }
 log = { version = "0.4" }
-
-[patch.crates-io]
-embassy-futures = { git = "https://github.com/embassy-rs/embassy.git", rev = "03a16011f63c11c97ded10f7e6b872db81280a23" }
-
-# [features]
-# avoid having to use --allow-multiple-definition linker flag
-# on macOS with Apple Silicon at least
-# default = ["rp-pico/disable-intrinsics"]
 
 [build-dependencies]
 xz2 = "0.1.7"

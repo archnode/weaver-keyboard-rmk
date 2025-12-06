@@ -1,5 +1,5 @@
 
-use rmk::{a, action::{EncoderAction, KeyAction}, encoder, k, keycode::ModifierCombination, layer, mo, mt, wm};
+use rmk::{a, encoder, k, layer, mo, mt, types::{action::{EncoderAction, KeyAction}, modifier::ModifierCombination}, wm};
 pub(crate) const COL: usize = 12;
 pub(crate) const ROW: usize = 4;
 pub(crate) const NUM_LAYER: usize = 4;

@@ -16,10 +16,10 @@ use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::Duration;
 use log::info;
 use keymap::{COL, ROW};
-use rmk::action::EncoderAction;
-use rmk::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
+use rmk::types::action::EncoderAction;
+use rmk::matrix::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
 use rmk::channel::EVENT_CHANNEL;
-use rmk::config::{BehaviorConfig, KeyboardUsbConfig, RmkConfig, StorageConfig, TapHoldConfig, VialConfig};
+use rmk::config::{BehaviorConfig, DeviceConfig, MorsesConfig, PositionalConfig, RmkConfig, StorageConfig, VialConfig};
 use rmk::debounce::default_debouncer::DefaultDebouncer;
 use rmk::futures::future::join3;
 use rmk::input_device::rotary_encoder::{RotaryEncoder};
@@ -79,7 +79,7 @@ async fn main(_spawner: Spawner) {
     // let flash = Flash::<_, Blocking, FLASH_SIZE>::new_blocking(p.FLASH);
     let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0);
 
-    let keyboard_usb_config = KeyboardUsbConfig {
+    let keyboard_usb_config = DeviceConfig {
         vid: 0x4c4b,
         pid: 0x4643,
         manufacturer: "archnode",
@@ -90,7 +90,7 @@ async fn main(_spawner: Spawner) {
     let vial_config = VialConfig::new(VIAL_KEYBOARD_ID, VIAL_KEYBOARD_DEF, &[(0, 0), (1, 1)]);
 
     let rmk_config = RmkConfig {
-        usb_config: keyboard_usb_config,
+        device_config: keyboard_usb_config,
         vial_config,
         ..Default::default()
     };
@@ -98,27 +98,28 @@ async fn main(_spawner: Spawner) {
     // Initialize the storage and keymap
     let mut default_keymap = keymap::get_default_keymap();
     let storage_config = StorageConfig::default();
+    let mut per_key_config = PositionalConfig::default();
     let mut behavior_config = BehaviorConfig {
-      tap_hold: TapHoldConfig {
-          enable_hrm: true,
-          timeout: Duration::from_millis(165),
+      morse: MorsesConfig {
+          enable_flow_tap: true,
+          prior_idle_time: Duration::from_millis(165),
           ..Default::default()
       },
       ..Default::default()  
     };
     let mut encoder_map: [[EncoderAction; _]; _] = keymap::get_default_encoder_map();
     let (keymap, mut storage) =
-        initialize_encoder_keymap_and_storage(&mut default_keymap, &mut encoder_map, flash, &storage_config, &mut behavior_config).await;
+        initialize_encoder_keymap_and_storage(&mut default_keymap, &mut encoder_map, flash, &storage_config, &mut behavior_config, &mut per_key_config).await;
 
     // Initialize the matrix + keyboard
-    let debouncer = DefaultDebouncer::<COL, COL>::new();
+    let debouncer = DefaultDebouncer::<ROW, COL>::new();
     let mut matrix = BidirectionalMatrix::<_, _, PIN_NUM, ROW, COL>::new(flex_pins, debouncer, scan_map);
     let mut keyboard = Keyboard::new(&keymap);
     
     // Initialize Rotary Encoder
     let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::Up);
     let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::Up);
-    let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 1, false, 0);
+    let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 2, false, 0);
 
     // Start
     join3(
