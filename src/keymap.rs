@@ -13,8 +13,8 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
             [k!(Tab), k!(C), mt!(T, ModifierCombination::new_from(false, false, true, false, false)), mt!(I, ModifierCombination::new_from(false, false, false, false, true)), k!(E), k!(O),
                 k!(B), k!(N), mt!(R, ModifierCombination::new_from(false, false, false, false, true)), mt!(S, ModifierCombination::new_from(false, false, true, false, false)), k!(G), k!(Q)],
             [k!(Backspace), k!(F), k!(V), k!(LeftBracket), k!(Quote), mt!(Semicolon, ModifierCombination::new_from(false, true, false, false, false)),
-                mt!(Z, ModifierCombination::new_from(true, true, false, false, false)), k!(Y), k!(Comma), k!(Dot), k!(K), a!(No)],
-            [k!(International4), k!(International5), k!(LShift), k!(Space), k!(AudioMute), a!(No),
+                mt!(Z, ModifierCombination::new_from(true, true, false, false, false)), k!(Y), k!(Comma), k!(Dot), k!(K), k!(Delete)],
+            [k!(International4), k!(RAlt), k!(LShift), k!(Space), k!(AudioMute), a!(No),
                 a!(No), a!(No), k!(Enter), mo!(2), mo!(1), mo!(3)]
         ]),
         layer!([
@@ -22,10 +22,10 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
                 wm!(Kc1, ModifierCombination::new_from(false, false, false, true, false)), k!(NonusBackslash), wm!(NonusBackslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc0, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc6, ModifierCombination::new_from(false, false, false, true, false)), wm!(Grave, ModifierCombination::new_from(false, false, false, true, false))],
             [wm!(E, ModifierCombination::new_from(true, false, true, false, false)), wm!(Minus, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc7, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc7, ModifierCombination::new_from(true, false, true, false, false)), wm!(Kc0, ModifierCombination::new_from(true, false, true, false, false)), wm!(RightBracket, ModifierCombination::new_from(false, false, false, true, false)),
                 wm!(Minus, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc8, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc9, ModifierCombination::new_from(false, false, false, true, false)), k!(Slash), wm!(Dot, ModifierCombination::new_from(false, false, false, true, false)), wm!(Q, ModifierCombination::new_from(true, false, true, false, false))],
-            [a!(No), k!(NonusHash), wm!(Kc4, ModifierCombination::new_from(false, false, false, true, false)), wm!(NonusBackslash, ModifierCombination::new_from(true, false, true, false, false)), wm!(RightBracket, ModifierCombination::new_from(true, false, true, false, false)), wm!(Equal, ModifierCombination::new_from(false, false, false, true, false)),
-                k!(RightBracket), wm!(Kc5, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc2, ModifierCombination::new_from(false, false, false, true, false)), wm!(Backslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Comma, ModifierCombination::new_from(false, false, false, true, false)), a!(No)],
-            [a!(No), a!(No), a!(No), a!(No), a!(No), a!(No),
-                a!(No), a!(No), a!(No), a!(No), a!(No), a!(No)]
+            [KeyAction::Transparent, k!(NonusHash), wm!(Kc4, ModifierCombination::new_from(false, false, false, true, false)), wm!(NonusBackslash, ModifierCombination::new_from(true, false, true, false, false)), wm!(RightBracket, ModifierCombination::new_from(true, false, true, false, false)), wm!(Equal, ModifierCombination::new_from(false, false, false, true, false)),
+                k!(RightBracket), wm!(Kc5, ModifierCombination::new_from(false, false, false, true, false)), wm!(Kc2, ModifierCombination::new_from(false, false, false, true, false)), wm!(Backslash, ModifierCombination::new_from(false, false, false, true, false)), wm!(Comma, ModifierCombination::new_from(false, false, false, true, false)), KeyAction::Transparent],
+            [KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, KeyAction::Transparent, a!(No),
+                a!(No), a!(No), KeyAction::Transparent, a!(No), a!(No), a!(No)]
         ]),
         layer!([
             [a!(No), k!(PageUp), k!(Backspace), k!(Up), k!(Delete), k!(PageDown),

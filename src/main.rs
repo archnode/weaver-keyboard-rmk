@@ -13,10 +13,9 @@ use embassy_rp::flash::{Async, Flash};
 use embassy_rp::gpio::{Flex, Input, Level};
 use embassy_rp::peripherals::USB;
 use embassy_rp::usb::{Driver, InterruptHandler};
-use embassy_time::Duration;
 use log::info;
 use keymap::{COL, ROW};
-use rmk::types::action::EncoderAction;
+use rmk::types::action::{EncoderAction, MorseProfile};
 use rmk::matrix::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
 use rmk::channel::EVENT_CHANNEL;
 use rmk::config::{BehaviorConfig, DeviceConfig, MorsesConfig, PositionalConfig, RmkConfig, StorageConfig, VialConfig};
@@ -102,7 +101,7 @@ async fn main(_spawner: Spawner) {
     let mut behavior_config = BehaviorConfig {
       morse: MorsesConfig {
           enable_flow_tap: true,
-          prior_idle_time: Duration::from_millis(165),
+          default_profile: MorseProfile::default().with_hold_timeout_ms(Some(185)),
           ..Default::default()
       },
       ..Default::default()  
