@@ -49,9 +49,7 @@ fn main() {
     println!("cargo:rustc-link-arg=-Tlink.x");
 
     // Set the linker script of the defmt
-    // println!("cargo:rustc-link-arg=-Tdefmt.x");
-
-    println!("cargo:rustc-linker=flip-link");
+    println!("cargo:rustc-link-arg=-Tdefmt.x");
 }
 
 fn generate_vial_config() {

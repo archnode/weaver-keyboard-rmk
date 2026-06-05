@@ -6,26 +6,29 @@ description = "Keyboard firmware written in Rust"
 homepage = "https://github.com/haobogu/rmk"
 repository = "https://github.com/haobogu/rmk"
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rmk = { version = "0.8", default-features = false, features = ["storage", "rp2040", "usb_log", "vial"] }
-embassy-time = { version = "0.5" }
-embassy-rp = { version = "0.8", features = [
+# rmk = { version = "^0.8.2", features = ["rp2040"] }
+rmk = { git = "https://github.com/HaoboGu/rmk.git", features = ["rp2040"] }
+embassy-time = { version = "0.5", features = ["defmt"] }
+embassy-rp = { version = "0.10", features = [
     "rp2040",
+    "defmt",
     "time-driver",
     "critical-section-impl",
 ] }
-embassy-executor = { version = "0.9", features = [
-    "arch-cortex-m",
+embassy-executor = { version = "0.10", features = [
+    "defmt",
+    "platform-cortex-m",
     "executor-thread",
 ] }
 cortex-m-rt = "0.7.5"
 portable-atomic = { version = "1.11", features = ["critical-section"] }
-panic-probe = { version = "1.0" }
-embedded-hal = { version = "1.0.0" }
-log = { version = "0.4" }
+defmt = "1.0"
+defmt-rtt = "1.0"
+panic-probe = { version = "1.0", features = ["print-defmt"] }
 
 [build-dependencies]
 xz2 = "0.1.7"
