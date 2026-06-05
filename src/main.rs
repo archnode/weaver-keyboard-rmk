@@ -7,34 +7,37 @@ mod keymap;
 mod macros;
 mod vial;
 
+use defmt::info;
+use defmt_rtt as _;
 use embassy_executor::Spawner;
-use embassy_rp::bind_interrupts;
 use embassy_rp::flash::{Async, Flash};
-use embassy_rp::gpio::{Flex, Input, Level};
-use embassy_rp::peripherals::USB;
+use embassy_rp::gpio::Input;
+use embassy_rp::peripherals::{DMA_CH0, USB};
 use embassy_rp::usb::{Driver, InterruptHandler};
+use embassy_rp::{bind_interrupts, dma};
 use embassy_time::Duration;
 use keymap::{COL, ROW};
-use log::info;
-use rmk::channel::EVENT_CHANNEL;
 use rmk::config::{
     BehaviorConfig, DeviceConfig, MorsesConfig, PositionalConfig, RmkConfig, StorageConfig,
     VialConfig,
 };
 use rmk::debounce::default_debouncer::DefaultDebouncer;
-use rmk::futures::future::join3;
+use rmk::host::HostService;
 use rmk::input_device::rotary_encoder::RotaryEncoder;
-use rmk::input_device::Runnable;
 use rmk::keyboard::Keyboard;
 use rmk::matrix::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
-use rmk::types::action::{EncoderAction, MorseMode, MorseProfile};
-use rmk::{initialize_encoder_keymap_and_storage, run_devices, run_rmk};
+use rmk::processor::builtin::wpm::WpmProcessor;
+use rmk::types::morse::{MorseMode, MorseProfile};
+use rmk::usb::UsbTransport;
+use rmk::watchdog::Rp2040Watchdog;
+use rmk::{KeymapData, initialize_keymap_and_storage, run_all};
 use vial::{VIAL_KEYBOARD_DEF, VIAL_KEYBOARD_ID};
 
 use panic_probe as _;
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
+    DMA_IRQ_0 => dma::InterruptHandler<DMA_CH0>;
 });
 
 const FLASH_SIZE: usize = 2 * 1024 * 1024;
@@ -127,7 +130,7 @@ async fn main(_spawner: Spawner) {
     // Use internal flash to emulate eeprom
     // Both blocking and async flash are support, use different API
     // let flash = Flash::<_, Blocking, FLASH_SIZE>::new_blocking(p.FLASH);
-    let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0);
+    let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0, Irqs);
 
     let keyboard_usb_config = DeviceConfig {
         vid: 0x4c4b,
@@ -146,15 +149,18 @@ async fn main(_spawner: Spawner) {
     };
 
     // Initialize the storage and keymap
-    let mut default_keymap = keymap::get_default_keymap();
+    let mut keymap_data = KeymapData::new_with_encoder(
+        keymap::get_default_keymap(),
+        keymap::get_default_encoder_map(),
+    );
     let storage_config = StorageConfig::default();
-    let mut per_key_config = PositionalConfig::default();
+    let per_key_config = PositionalConfig::default();
     let mut behavior_config = BehaviorConfig {
         morse: MorsesConfig {
             enable_flow_tap: true,
             prior_idle_time: Duration::from_millis(200),
             default_profile: MorseProfile::default()
-                .with_hold_timeout_ms(Some(185))
+                .with_hold_timeout_ms(Some(250))
                 .with_unilateral_tap(Some(true))
                 .with_gap_timeout_ms(Some(250))
                 .with_mode(Some(MorseMode::PermissiveHold)),
@@ -162,14 +168,12 @@ async fn main(_spawner: Spawner) {
         },
         ..Default::default()
     };
-    let mut encoder_map: [[EncoderAction; _]; _] = keymap::get_default_encoder_map();
-    let (keymap, mut storage) = initialize_encoder_keymap_and_storage(
-        &mut default_keymap,
-        &mut encoder_map,
+    let (keymap, mut storage) = initialize_keymap_and_storage(
+        &mut keymap_data,
         flash,
         &storage_config,
         &mut behavior_config,
-        &mut per_key_config,
+        &per_key_config,
     )
     .await;
 
@@ -178,19 +182,28 @@ async fn main(_spawner: Spawner) {
     let mut matrix =
         BidirectionalMatrix::<_, _, PIN_NUM, ROW, COL>::new(flex_pins, debouncer, scan_map);
     let mut keyboard = Keyboard::new(&keymap);
+    let host_ctx = rmk::host::KeyboardContext::new(&keymap);
+    let mut host_service = HostService::new(&host_ctx, &rmk_config);
+
+    let mut usb_transport = UsbTransport::new(driver, rmk_config.device_config);
+    let mut wpm_processor = WpmProcessor::new();
+    let mut watchdog_runner =
+        Rp2040Watchdog::default_runner(embassy_rp::watchdog::Watchdog::new(p.WATCHDOG));
 
     // Initialize Rotary Encoder
     let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::Up);
     let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::Up);
     let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 2, false, 0);
 
-    // Start
-    join3(
-        run_devices! (
-            (matrix, encoder) => EVENT_CHANNEL,
-        ),
-        keyboard.run(),
-        run_rmk(&keymap, driver, &mut storage, rmk_config),
+    run_all!(
+        matrix,
+        encoder,
+        storage,
+        usb_transport,
+        wpm_processor,
+        keyboard,
+        host_service,
+        watchdog_runner
     )
     .await;
 }

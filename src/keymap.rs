@@ -1,5 +1,11 @@
-
-use rmk::{a, encoder, k, layer, mo, mt, types::{action::{EncoderAction, KeyAction}, modifier::ModifierCombination}, wm};
+use rmk::{
+    a, encoder, k, layer, mo, mt,
+    types::{
+        action::{EncoderAction, KeyAction},
+        modifier::ModifierCombination,
+    },
+    wm,
+};
 pub(crate) const COL: usize = 12;
 pub(crate) const ROW: usize = 4;
 pub(crate) const NUM_LAYER: usize = 4;
@@ -52,17 +58,9 @@ pub const fn get_default_keymap() -> [[[KeyAction; COL]; ROW]; NUM_LAYER] {
 
 pub const fn get_default_encoder_map() -> [[EncoderAction; 1]; NUM_LAYER] {
     [
-        [
-            encoder!(k!(Up), k!(Down)),
-        ],
-        [
-            encoder!(k!(PageUp), k!(PageDown)),
-        ],
-        [
-            encoder!(k!(KbVolumeUp), k!(KbVolumeDown)),
-        ],
-        [
-            encoder!(k!(KbVolumeUp), k!(KbVolumeDown)),
-        ],
+        [encoder!(k!(Up), k!(Down))],
+        [encoder!(k!(PageUp), k!(PageDown))],
+        [encoder!(k!(KbVolumeUp), k!(KbVolumeDown))],
+        [encoder!(k!(KbVolumeUp), k!(KbVolumeDown))],
     ]
 }
