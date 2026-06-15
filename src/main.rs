@@ -7,38 +7,44 @@ mod keymap;
 mod macros;
 mod vial;
 
+use defmt::info;
+use defmt_rtt as _;
 use embassy_executor::Spawner;
-use embassy_rp::bind_interrupts;
 use embassy_rp::flash::{Async, Flash};
-use embassy_rp::gpio::{Flex, Input, Level};
-use embassy_rp::peripherals::USB;
+use embassy_rp::gpio::Input;
+use embassy_rp::peripherals::{DMA_CH0, USB};
 use embassy_rp::usb::{Driver, InterruptHandler};
+use embassy_rp::{bind_interrupts, dma};
 use embassy_time::Duration;
-use log::info;
 use keymap::{COL, ROW};
-use rmk::action::EncoderAction;
-use rmk::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
-use rmk::channel::EVENT_CHANNEL;
-use rmk::config::{BehaviorConfig, KeyboardUsbConfig, RmkConfig, StorageConfig, TapHoldConfig, VialConfig};
+use rmk::config::{
+    BehaviorConfig, DeviceConfig, MorsesConfig, PositionalConfig, RmkConfig, StorageConfig,
+    VialConfig,
+};
 use rmk::debounce::default_debouncer::DefaultDebouncer;
-use rmk::futures::future::join3;
-use rmk::input_device::rotary_encoder::{RotaryEncoder};
-use rmk::input_device::Runnable;
+use rmk::host::HostService;
+use rmk::input_device::rotary_encoder::RotaryEncoder;
 use rmk::keyboard::Keyboard;
-use rmk::{initialize_encoder_keymap_and_storage, run_devices, run_rmk};
+use rmk::matrix::bidirectional_matrix::{BidirectionalMatrix, ScanLocation};
+use rmk::processor::builtin::wpm::WpmProcessor;
+use rmk::types::morse::{MorseMode, MorseProfile};
+use rmk::usb::UsbTransport;
+use rmk::watchdog::Rp2040Watchdog;
+use rmk::{KeymapData, initialize_keymap_and_storage, run_all};
 use vial::{VIAL_KEYBOARD_DEF, VIAL_KEYBOARD_ID};
 
-use {panic_probe as _};
+use panic_probe as _;
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => InterruptHandler<USB>;
+    DMA_IRQ_0 => dma::InterruptHandler<DMA_CH0>;
 });
 
 const FLASH_SIZE: usize = 2 * 1024 * 1024;
-const PIN_NUM: usize = 14;
+const PIN_NUM: usize = 10;
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {    
+async fn main(_spawner: Spawner) {
     info!("RMK start!");
     // Initialize peripherals
     let p = embassy_rp::init(Default::default());
@@ -47,39 +53,86 @@ async fn main(_spawner: Spawner) {
     let driver = Driver::new(p.USB, Irqs);
 
     // Pin config
-    let flex_pins =
-        config_matrix_pins_rp!(peripherals: p, pins: [
-            // Rows Index 0-7
-            PIN_26, PIN_15, PIN_14, PIN_13, PIN_9, PIN_10, PIN_11, PIN_12,
-            // Cols Index 8-13
-            PIN_29, PIN_28, PIN_27, PIN_8, PIN_7, PIN_6
-        ]);
-    
+    let flex_pins = config_matrix_pins_rp!(peripherals: p, pins: [
+        // Rows Index 0-3
+        PIN_26, PIN_15, PIN_14, PIN_13,
+        // Cols Index 4-9
+        PIN_29, PIN_28, PIN_27, PIN_12, PIN_11, PIN_10
+    ]);
+
     let scan_map = [
-        // Row 1: Left                                      +
-        [ScanLocation::Pins(0,8), ScanLocation::Pins(8,0), ScanLocation::Pins(0,9), ScanLocation::Pins(9,0), ScanLocation::Pins(0,10), ScanLocation::Pins(10,0),
-        // Row 1: Right
-        ScanLocation::Pins(11,4), ScanLocation::Pins(4,11), ScanLocation::Pins(12,4), ScanLocation::Pins(4,12), ScanLocation::Pins(13,4), ScanLocation::Pins(4,13)],
-        // Row 2: Left                                      +
-        [ScanLocation::Pins(1,8), ScanLocation::Pins(8,1), ScanLocation::Pins(1,9), ScanLocation::Pins(9,1), ScanLocation::Pins(1,10), ScanLocation::Pins(10,1),
-        // Row 2: Right
-        ScanLocation::Pins(11,5), ScanLocation::Pins(5,11), ScanLocation::Pins(12,5), ScanLocation::Pins(5,12), ScanLocation::Pins(13,5), ScanLocation::Pins(5,13)],
-        // Row 3: Left                                      +
-        [ScanLocation::Pins(2,8), ScanLocation::Pins(8,2), ScanLocation::Pins(2,9), ScanLocation::Pins(9,2), ScanLocation::Pins(2,10), ScanLocation::Pins(10,2),
-        // Row 3: Right
-        ScanLocation::Pins(11,6), ScanLocation::Pins(6,11), ScanLocation::Pins(12,6), ScanLocation::Pins(6,12), ScanLocation::Pins(13,6), ScanLocation::Pins(6,13)],
-        // Row 4: Left                                      +
-        [ScanLocation::Pins(3,8), ScanLocation::Pins(8,3), ScanLocation::Pins(3,9), ScanLocation::Pins(9,3), ScanLocation::Ignore, ScanLocation::Ignore,
-        // Row 4: Right
-        ScanLocation::Ignore, ScanLocation::Ignore, ScanLocation::Pins(12,7), ScanLocation::Pins(7,12), ScanLocation::Pins(13,7), ScanLocation::Pins(7,13)],
+        // Row 1: Left
+        [
+            ScanLocation::Pins(0, 4),
+            ScanLocation::Pins(4, 0),
+            ScanLocation::Pins(0, 5),
+            ScanLocation::Pins(5, 0),
+            ScanLocation::Pins(0, 6),
+            ScanLocation::Pins(6, 0),
+            // Row 1: Right
+            ScanLocation::Pins(7, 0),
+            ScanLocation::Pins(0, 7),
+            ScanLocation::Pins(8, 0),
+            ScanLocation::Pins(0, 8),
+            ScanLocation::Pins(9, 0),
+            ScanLocation::Pins(0, 9),
+        ],
+        // Row 2: Left
+        [
+            ScanLocation::Pins(1, 4),
+            ScanLocation::Pins(4, 1),
+            ScanLocation::Pins(1, 5),
+            ScanLocation::Pins(5, 1),
+            ScanLocation::Pins(1, 6),
+            ScanLocation::Pins(6, 1),
+            // Row 2: Right
+            ScanLocation::Pins(7, 1),
+            ScanLocation::Pins(1, 7),
+            ScanLocation::Pins(8, 1),
+            ScanLocation::Pins(1, 8),
+            ScanLocation::Pins(9, 1),
+            ScanLocation::Pins(1, 9),
+        ],
+        // Row 3: Left
+        [
+            ScanLocation::Pins(2, 4),
+            ScanLocation::Pins(4, 2),
+            ScanLocation::Pins(2, 5),
+            ScanLocation::Pins(5, 2),
+            ScanLocation::Pins(2, 6),
+            ScanLocation::Pins(6, 2),
+            // Row 3: Right
+            ScanLocation::Pins(7, 2),
+            ScanLocation::Pins(2, 7),
+            ScanLocation::Pins(8, 2),
+            ScanLocation::Pins(2, 8),
+            ScanLocation::Pins(9, 2),
+            ScanLocation::Pins(2, 9),
+        ],
+        // Row 4: Left
+        [
+            ScanLocation::Pins(3, 4),
+            ScanLocation::Pins(4, 3),
+            ScanLocation::Pins(3, 5),
+            ScanLocation::Pins(5, 3),
+            ScanLocation::Pins(3, 6),
+            ScanLocation::Ignore,
+            // Row 4: Right
+            ScanLocation::Ignore,
+            ScanLocation::Ignore,
+            ScanLocation::Pins(8, 3),
+            ScanLocation::Pins(3, 8),
+            ScanLocation::Pins(9, 3),
+            ScanLocation::Pins(3, 9),
+        ],
     ];
-    
+
     // Use internal flash to emulate eeprom
     // Both blocking and async flash are support, use different API
     // let flash = Flash::<_, Blocking, FLASH_SIZE>::new_blocking(p.FLASH);
-    let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0);
+    let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0, Irqs);
 
-    let keyboard_usb_config = KeyboardUsbConfig {
+    let keyboard_usb_config = DeviceConfig {
         vid: 0x4c4b,
         pid: 0x4643,
         manufacturer: "archnode",
@@ -90,43 +143,67 @@ async fn main(_spawner: Spawner) {
     let vial_config = VialConfig::new(VIAL_KEYBOARD_ID, VIAL_KEYBOARD_DEF, &[(0, 0), (1, 1)]);
 
     let rmk_config = RmkConfig {
-        usb_config: keyboard_usb_config,
+        device_config: keyboard_usb_config,
         vial_config,
         ..Default::default()
     };
 
     // Initialize the storage and keymap
-    let mut default_keymap = keymap::get_default_keymap();
+    let mut keymap_data = KeymapData::new_with_encoder(
+        keymap::get_default_keymap(),
+        keymap::get_default_encoder_map(),
+    );
     let storage_config = StorageConfig::default();
+    let per_key_config = PositionalConfig::default();
     let mut behavior_config = BehaviorConfig {
-      tap_hold: TapHoldConfig {
-          enable_hrm: true,
-          timeout: Duration::from_millis(165),
-          ..Default::default()
-      },
-      ..Default::default()  
+        morse: MorsesConfig {
+            enable_flow_tap: true,
+            prior_idle_time: Duration::from_millis(200),
+            default_profile: MorseProfile::default()
+                .with_hold_timeout_ms(Some(250))
+                .with_unilateral_tap(Some(true))
+                .with_gap_timeout_ms(Some(250))
+                .with_mode(Some(MorseMode::PermissiveHold)),
+            ..Default::default()
+        },
+        ..Default::default()
     };
-    let mut encoder_map: [[EncoderAction; _]; _] = keymap::get_default_encoder_map();
-    let (keymap, mut storage) =
-        initialize_encoder_keymap_and_storage(&mut default_keymap, &mut encoder_map, flash, &storage_config, &mut behavior_config).await;
+    let (keymap, mut storage) = initialize_keymap_and_storage(
+        &mut keymap_data,
+        flash,
+        &storage_config,
+        &mut behavior_config,
+        &per_key_config,
+    )
+    .await;
 
     // Initialize the matrix + keyboard
-    let debouncer = DefaultDebouncer::<PIN_NUM, PIN_NUM>::new();
-    let mut matrix = BidirectionalMatrix::<_, _, PIN_NUM, ROW, COL>::new(flex_pins, debouncer, scan_map);
+    let debouncer = DefaultDebouncer::<ROW, COL>::new();
+    let mut matrix =
+        BidirectionalMatrix::<_, _, PIN_NUM, ROW, COL>::new(flex_pins, debouncer, scan_map);
     let mut keyboard = Keyboard::new(&keymap);
-    
+    let host_ctx = rmk::host::KeyboardContext::new(&keymap);
+    let mut host_service = HostService::new(&host_ctx, &rmk_config);
+
+    let mut usb_transport = UsbTransport::new(driver, rmk_config.device_config);
+    let mut wpm_processor = WpmProcessor::new();
+    let mut watchdog_runner =
+        Rp2040Watchdog::default_runner(embassy_rp::watchdog::Watchdog::new(p.WATCHDOG));
+
     // Initialize Rotary Encoder
     let pin_a = Input::new(p.PIN_1, embassy_rp::gpio::Pull::Up);
     let pin_b = Input::new(p.PIN_2, embassy_rp::gpio::Pull::Up);
-    let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 1, false, 0);
+    let mut encoder = RotaryEncoder::with_resolution(pin_a, pin_b, 2, false, 0);
 
-    // Start
-    join3(
-        run_devices! (
-            (matrix, encoder) => EVENT_CHANNEL,
-        ),
-        keyboard.run(),
-        run_rmk(&keymap, driver, &mut storage, rmk_config),
+    run_all!(
+        matrix,
+        encoder,
+        storage,
+        usb_transport,
+        wpm_processor,
+        keyboard,
+        host_service,
+        watchdog_runner
     )
     .await;
 }

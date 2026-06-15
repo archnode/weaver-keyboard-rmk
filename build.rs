@@ -49,9 +49,7 @@ fn main() {
     println!("cargo:rustc-link-arg=-Tlink.x");
 
     // Set the linker script of the defmt
-    // println!("cargo:rustc-link-arg=-Tdefmt.x");
-
-    println!("cargo:rustc-linker=flip-link");
+    println!("cargo:rustc-link-arg=-Tdefmt.x");
 }
 
 fn generate_vial_config() {
@@ -62,7 +60,8 @@ fn generate_vial_config() {
     let mut content = String::new();
     match File::open(p) {
         Ok(mut file) => {
-            file.read_to_string(&mut content).expect("Cannot read vial.json");
+            file.read_to_string(&mut content)
+                .expect("Cannot read vial.json");
         }
         Err(e) => println!("Cannot find vial.json {:?}: {}", p, e),
     };

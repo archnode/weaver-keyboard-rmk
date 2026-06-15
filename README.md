@@ -1,6 +1,4 @@
-# RMK 
-
-RMK is a feature-rich and easy-to-use keyboard firmware.
+# Weaver RMK Firmware 
 
 ## Use the template
 
